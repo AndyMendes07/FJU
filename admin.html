@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Líder | FJU</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .admin-header { background: #333; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .section-title { padding: 20px 20px 0; font-size: 1.5rem; color: #004aad; border-bottom: 2px solid #eee; margin-bottom: 10px; }
+        
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px; }
+        
+        .card-jovem {
+            background: white; border-radius: 10px; padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;
+            border-top: 5px solid #ccc; position: relative;
+        }
+        .card-jovem.concluido { border-top-color: #FFD700; }
+        .card-jovem.finalizado { border-top-color: #28a745; background-color: #f0fff4; }
+
+        .card-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid #004aad; margin-bottom: 10px; }
+        .card-name { font-weight: bold; font-size: 1.1rem; color: #333; }
+        .card-info { font-size: 0.8rem; color: #666; margin-bottom: 10px; }
+        
+        .mini-progress { height: 10px; background: #eee; border-radius: 5px; overflow: hidden; margin-top: 10px; }
+        .mini-bar { height: 100%; background: #004aad; width: 0%; }
+        
+        .badge { background: #666; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; }
+
+        /* Estilo da Galeria de Fotos no Card */
+        .evidence-gallery {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px dashed #ccc;
+            text-align: left;
+        }
+        .evidence-title { font-size: 0.8rem; font-weight: bold; color: #555; margin-bottom: 5px; display: block; }
+        .evidence-thumbs { display: flex; gap: 5px; flex-wrap: wrap; }
+        .thumb-link { text-decoration: none; }
+        .evidence-img {
+            width: 45px; height: 45px; 
+            border-radius: 5px; 
+            object-fit: cover; 
+            border: 2px solid #eee;
+            transition: transform 0.2s;
+        }
+        .evidence-img:hover { transform: scale(1.2); border-color: #004aad; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-header">
+        <h2>📊 Dashboard FJU</h2>
+        <button onclick="carregarTudo()" style="cursor:pointer; padding:10px; background: #00ff88; border: none; border-radius: 5px; font-weight: bold; color: #004aad;">🔄 Atualizar</button>
+    </div>
+
+    <h3 class="section-title">🔥 Em Andamento (Semana Atual)</h3>
+    <div class="grid-container" id="gridTempoReal">
+        <p>Carregando...</p>
+    </div>
+
+    <h3 class="section-title">✅ Histórico de Entregas (Finalizados)</h3>
+    <div class="grid-container" id="gridHistorico">
+        <p>Buscando histórico...</p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // CONFIGURAÇÃO
+        const firebaseConfig = {
+            apiKey: "AIzaSyDg5LXnZXQ8RneOWgVWVglk_QhtQPWrmTE",
+            authDomain: "fju-desafio-semanal.firebaseapp.com",
+            projectId: "fju-desafio-semanal",
+            storageBucket: "fju-desafio-semanal.firebasestorage.app",
+            messagingSenderId: "143324693175",
+            appId: "1:143324693175:web:0bd390986aea549e7ec332"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        function carregarTudo() {
+            carregarTempoReal();
+            carregarHistorico();
+        }
+
+        // 1. Carrega Tempo Real (COM O NOVO FILTRO)
+        function carregarTempoReal() {
+            const grid = document.getElementById('gridTempoReal');
+            grid.innerHTML = ''; // Limpa antes de começar
+            
+            db.collection("ranking_semanal").orderBy("porcentagem", "desc").get().then((query) => {
+                let contadorAtivos = 0;
+
+                query.forEach((doc) => {
+                    const data = doc.data();
+                    const pctNum = parseInt(data.porcentagem) || 0;
+
+                    // --- O FILTRO MÁGICO ---
+                    // Se a porcentagem for 0 (ou seja, acabou de finalizar ou não começou),
+                    // ele pula esse jovem e não desenha o card.
+                    if (pctNum === 0) return; 
+
+                    criarCard(grid, data, false);
+                    contadorAtivos++;
+                });
+
+                // Se não tiver ninguém ativo (ou todos estiverem zerados)
+                if (contadorAtivos === 0) {
+                    grid.innerHTML = '<p style="padding:20px; color: #666;">Nenhum jovem iniciou a semana ainda.</p>';
+                }
+            });
+        }
+
+        // 2. Carrega Histórico
+        function carregarHistorico() {
+            const grid = document.getElementById('gridHistorico');
+            grid.innerHTML = '';
+
+            db.collection("historico_semanas").orderBy("dataFechamento", "desc").limit(20).get().then((query) => {
+                if(query.empty) {
+                    grid.innerHTML = '<p style="padding:20px; color: #666;">Nenhuma semana finalizada ainda.</p>';
+                    return;
+                }
+
+                query.forEach((doc) => {
+                    const data = doc.data();
+                    const dadosAdaptados = {
+                        ...data,
+                        porcentagem: data.porcentagemFinal,
+                        ultimaAtualizacao: data.dataFechamento
+                    };
+                    criarCard(grid, dadosAdaptados, true);
+                });
+            });
+        }
+
+        function criarCard(container, data, isFinalizado) {
+            const pctNum = parseInt(data.porcentagem) || 0;
+            const corBarra = pctNum === 100 ? '#FFD700' : (pctNum > 50 ? '#00ff88' : '#004aad');
+            const classeExtra = isFinalizado ? 'finalizado' : (pctNum === 100 ? 'concluido' : '');
+            
+            // Link de fallback para avatar
+            const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.nome)}&background=eee&color=999&size=128`;
+            const foto = data.fotoPerfil || fallbackAvatar;
+            
+            let dataStr = "---";
+            if(data.ultimaAtualizacao && data.ultimaAtualizacao.seconds) {
+                dataStr = new Date(data.ultimaAtualizacao.seconds * 1000).toLocaleString('pt-BR');
+            }
+
+            // --- GALERIA DE FOTOS ---
+            let galeriaHtml = '';
+            let contadorFotos = 0;
+
+            if (data.respostas) {
+                Object.values(data.respostas).forEach(resp => {
+                    if (resp.fotoUrl && resp.fotoUrl.length > 5) {
+                        galeriaHtml += `
+                            <a href="${resp.fotoUrl}" target="_blank" class="thumb-link" title="Ver foto ampliada">
+                                <img src="${resp.fotoUrl}" class="evidence-img" onerror="this.style.display='none'">
+                            </a>
+                        `;
+                        contadorFotos++;
+                    }
+                });
+            }
+
+            let htmlGaleriaFinal = '';
+            if (contadorFotos > 0) {
+                htmlGaleriaFinal = `
+                    <div class="evidence-gallery">
+                        <span class="evidence-title">📸 Evidências (${contadorFotos}):</span>
+                        <div class="evidence-thumbs">
+                            ${galeriaHtml}
+                        </div>
+                    </div>
+                `;
+            }
+            // ------------------------
+
+            const html = `
+                <div class="card-jovem ${classeExtra}">
+                    <img src="${foto}" 
+                         class="card-img" 
+                         alt="${data.nome}"
+                         onerror="this.onerror=null;this.src='${fallbackAvatar}';">
+                    
+                    <div class="card-name">${data.nome}</div>
+                    <div class="card-info">${data.tribo} | ${data.projeto}</div>
+                    ${isFinalizado ? '<span class="badge">ENTREGUE</span>' : ''}
+                    
+                    <div style="margin-top:10px; font-weight:bold; font-size:1.2rem; color:${isFinalizado ? '#28a745' : '#333'}">
+                        ${data.porcentagem}
+                    </div>
+                    
+                    <div class="mini-progress">
+                        <div class="mini-bar" style="width: ${data.porcentagem}; background-color: ${corBarra};"></div>
+                    </div>
+                    
+                    ${htmlGaleriaFinal}
+
+                    <p style="font-size: 0.7rem; margin-top: 10px; color: #999;">
+                        ${isFinalizado ? 'Entregue em:' : 'Atualizado em:'} ${dataStr}
+                    </p>
+                </div>
+            `;
+            container.innerHTML += html;
+        }
+
+        carregarTudo();
+    </script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio FJU Capela</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Ano do IDE | FJU Capela 🟦🟥⬜</h1>
+            
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar">0%</div>
+            </div>
+            <p id="progressText">0% Concluído</p>
+        </header>
+
+        <section class="profile-section">
+            <div class="profile-pic-container">
+                <div onclick="document.getElementById('profilePicInput').click()" style="position: relative; display: inline-block;">
+                    <img src="https://ui-avatars.com/api/?name=Foto&background=eee&color=999&size=128" 
+                         id="profilePreview" 
+                         alt="Foto de Perfil"
+                         onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=Foto&background=eee&color=999&size=128';">
+                    
+                    <span class="edit-icon"><i class="material-icons">camera_alt</i></span>
+                </div>
+                
+                <div id="deleteProfileBtn" class="delete-icon-profile" onclick="deletarFotoPerfil()" title="Remover foto">
+                    <i class="material-icons">delete</i>
+                </div>
+
+                <input type="file" id="profilePicInput" hidden accept="image/*">
+            </div>
+            
+            <div class="input-group">
+                <label style="font-size: 0.8rem; color: #666;">Digite seu nome e clique em Começar:</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="userName" placeholder="Nome Completo (Ex: Anderson Silva)" style="flex-grow: 1;">
+                    
+                    <button onclick="verificarUsuario()" class="btn-load" title="Começar ou Carregar">
+                        <span style="font-weight: bold; margin-right: 5px;">COMEÇAR</span>
+                        <i class="material-icons">play_circle_filled</i>
+                    </button>
+                </div>
+
+                <select id="userTribe">
+                    <option value="">Selecione sua Tribo</option>
+                    <option value="Juda">Judá</option>
+                    <option value="Levi">Levi</option>
+                    <option value="Issacar">Issacar</option>
+                    <option value="Efraim">Efraim</option>
+                </select>
+                <input type="text" id="userProject" placeholder="Seu Projeto (Ex: Cultura, Mídia)">
+            </div>
+        </section>
+
+        <section class="task-section">
+            <h2>📸 Missões com Foto (Obrigatório)</h2>
+            <p class="subtitle">Anexe a foto para marcar como feito.</p>
+            <div id="photoTasksList"></div>
+        </section>
+
+        <section class="task-section">
+            <h2>✅ Missões Semanais</h2>
+            <div id="simpleTasksList"></div>
+        </section>
+
+        <div class="action-buttons">
+            <button id="saveBtn" class="btn-primary btn-blue">
+                <i class="material-icons" style="font-size: 1rem; vertical-align: middle;">save</i> 
+                SALVAR RASCUNHO (Continuar depois)
+            </button>
+            
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+            <button onclick="finalizarSemana()" class="btn-primary btn-green">
+                ✅ FINALIZAR SEMANA E REINICIAR
+            </button>
+            <p style="text-align: center; color: #666; font-size: 0.8rem; margin-top: 5px;">
+                Clique no botão verde apenas no <b>Domingo à noite</b>!
+            </p>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+    <script src="app.js"></script>
+</body>
+</html>
